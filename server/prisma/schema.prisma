@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. User Roles
+enum Role {
+  SYSTEM_ADMIN
+  NORMAL_USER
+  STORE_OWNER
+}
+
+// 2. User Model
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  address      String?
+  role         Role      @default(NORMAL_USER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relationships
+  ownedStore   Store?    @relation("StoreOwner")
+  ratings      Rating[]
+
+  @@index([email])
+  @@index([role])
+  @@index([name])
+  @@map("users")
+}
+
+// 3. Store Model
+model Store {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  address   String
+  ownerId   String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  owner     User?    @relation("StoreOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  ratings   Rating[]
+
+  @@index([name])
+  @@index([email])
+  @@index([address])
+  @@map("stores")
+}
+
+// 4. Rating Model
+model Rating {
+  id        String   @id @default(uuid())
+  rating    Int
+  userId    String
+  storeId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  // CRITICAL CONSTRAINT: A user can rate a store only once
+  @@unique([userId, storeId])
+  @@index([userId])
+  @@index([storeId])
+  @@map("ratings")
+}

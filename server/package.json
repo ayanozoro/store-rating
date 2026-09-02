@@ -2,10 +2,10 @@
   "name": "store-rating-server",
   "version": "1.0.0",
   "description": "Backend server for Store Rating Platform",
-  "main": "src/server.js",
+  "main": "src/app.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
     "seed": "node prisma/seed.js",
     "prisma:generate": "npx prisma generate",
     "prisma:migrate": "npx prisma migrate dev",
