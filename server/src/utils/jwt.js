@@ -1,8 +1,8 @@
-import jwt from 'jsonwebtoken';
+import "dotenv/config";
+import jwt from "jsonwebtoken";
 
-
-const jwt_secret = process.env.JWT_SECRET;
-const jwt_expires_in = process.env.JWT_EXPIRES_IN;
+const getSecret = () => process.env.JWT_SECRET || "store_rating_super_secret_jwt_key_2026_change_in_production";
+const getExpiresIn = () => process.env.JWT_EXPIRES_IN || "1d";
 
 const generateToken = (payload) => {
     const { userId, role } = payload;
@@ -10,25 +10,24 @@ const generateToken = (payload) => {
     try {
         const token = jwt.sign(
             { userId, role },
-            jwt_secret,
-            {
-                expiresIn: jwt_expires_in
-            }
-        )
-
+            getSecret(),
+            { expiresIn: getExpiresIn() }
+        );
         return token;
     } catch (error) {
-        console.log(`Error in jwt`)
+        console.error("Error generating JWT:", error.message);
+        return null;
     }
-}
+};
 
 const verifyToken = (token) => {
     try {
-        const decodedToken = jwt.verify(token, jwt_secret);
+        const decodedToken = jwt.verify(token, getSecret());
         return decodedToken;
     } catch (error) {
-        console.log(`Error in jwt`)
+        console.error("Error verifying JWT:", error.message);
+        return null;
     }
-}
+};
 
-export { generateToken, verifyToken }
+export { generateToken, verifyToken };

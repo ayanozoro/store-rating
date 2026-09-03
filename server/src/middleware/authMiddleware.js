@@ -4,23 +4,31 @@ import { sendError } from '../utils/apiResponse.js';
 
 const authenticate = async (req, res, next) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer")) return res.status(401).send("Unauthorized");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return sendError(res, 401, null, "Unauthorized: No token provided");
+    }
 
     try {
         const token = authHeader.split(" ")[1];
         const decodedToken = verifyToken(token);
-        if (!decodedToken) return res.status(401).send("Unauthorized");
+        if (!decodedToken || !decodedToken.userId) {
+            return sendError(res, 401, null, "Unauthorized: Invalid token");
+        }
+
         const user = await prisma.user.findUnique({
             where: { id: decodedToken.userId },
             select: { id: true, name: true, email: true, role: true, address: true },
         });
-        if (!user) return res.status(401).send("Unauthorized");
+
+        if (!user) {
+            return sendError(res, 401, null, "Unauthorized: User not found");
+        }
+
         req.user = user;
         next();
+    } catch (error) {
+        return sendError(res, 401, null, "Unauthorized: Invalid or expired token");
     }
-    catch (error) {
-        sendError(res, "Invalid Token or expire token", 401);
-    }
-}
+};
 
-export { authenticate }
+export { authenticate };

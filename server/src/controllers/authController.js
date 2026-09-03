@@ -1,99 +1,163 @@
-import prisma from "../config/database.js"
-import { hashPassword, comparePassword } from "../utils/bcrypt.js"
-import { generateToken } from "../utils/jwt.js"
-import { sendSuccess, sendError } from "../utils/responseHandler.js"
-
+import prisma from "../config/database.js";
+import { hashPassword, comparePassword } from "../utils/password.js";
+import { generateToken } from "../utils/jwt.js";
+import { sendSuccess, sendError } from "../utils/apiResponse.js";
 
 const register = async (req, res) => {
-    const { name, email, password, adress } = req.body
+    const { name, email, password, address, adress } = req.body;
+    const userAddress = address || adress || null;
 
     try {
         const isDuplicate = await prisma.user.findUnique({
             where: { email }
-        })
+        });
 
         if (isDuplicate) {
-            sendError(res, "User with this email already exist", 400)
-            return
+            return sendError(res, 400, null, "User with this email already exists");
         }
-        const hashPassword = await hashPassword(password);
+
+        const hashedPassword = await hashPassword(password);
 
         const user = await prisma.user.create({
             data: {
                 name,
                 email,
-                passwordHash: hashPassword,
-                adress,
+                passwordHash: hashedPassword,
+                address: userAddress,
                 role: "NORMAL_USER"
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                address: true,
+                role: true,
+                createdAt: true
             }
-        })
-        sendSuccess(res, "User registered Successfully", 201)
+        });
 
-        const token = generateToken(user.id, user.role)
+        const token = generateToken({ userId: user.id, role: user.role });
+
         res.cookie("token", token, {
             httpOnly: true,
-            secure: true,
+            secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
             maxAge: 24 * 60 * 60 * 1000
-        })
+        });
+
+        return sendSuccess(res, 201, { user, token }, "User registered successfully");
     } catch (error) {
-        console.log(error)
-        sendError(res, "Internal server error", 500)
+        console.error("Register error:", error);
+        return sendError(res, 500, null, "Internal server error");
     }
-}
+};
 
 const login = async (req, res) => {
-    const { email, password } = req.body
+    const { email, password } = req.body;
 
     if (!email || !password) {
-        sendError(res, "All fields are required", 400)
-        return
+        return sendError(res, 400, null, "Email and password are required");
     }
 
     try {
-        const user = await prisma.findUnique({
-            where: {
-                email
-            }
-        })
+        const user = await prisma.user.findUnique({
+            where: { email }
+        });
+
         if (!user) {
-            sendError(res, "Invalid email or password", 400)
-            return
+            return sendError(res, 401, null, "Invalid email or password");
         }
 
-        const isPasswordValid = await comparePassword(password, user.password)
+        const isPasswordValid = await comparePassword(password, user.passwordHash);
         if (!isPasswordValid) {
-            sendError(res, "Invalid email or password", 400)
-            return
+            return sendError(res, 401, null, "Invalid email or password");
         }
 
-        const token = generateToken(user.id, user.role)
+        const token = generateToken({ userId: user.id, role: user.role });
+
         res.cookie("token", token, {
             httpOnly: true,
-            secure: true,
+            secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
             maxAge: 24 * 60 * 60 * 1000
-        })
-        sendSuccess(res, "User logged in successfully", 200)
+        });
 
+        const userResponse = {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            address: user.address,
+            role: user.role,
+            createdAt: user.createdAt
+        };
+
+        return sendSuccess(res, 200, { user: userResponse, token }, "User logged in successfully");
     } catch (error) {
-        console.log(error)
-        sendError(res, "Internal server error", 500)
+        console.error("Login error:", error);
+        return sendError(res, 500, null, "Internal server error");
     }
-}
+};
 
 const getMe = async (req, res) => {
     try {
         const user = await prisma.user.findUnique({
-            where: {
-                id: req.userId
+            where: { id: req.user.id },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                address: true,
+                role: true,
+                createdAt: true,
+                updatedAt: true
             }
-        })
-        sendSuccess(res, "User data fetched successfully", 200)
-    } catch (error) {
-        console.log(error)
-        sendError(res, "Internal server error", 500)
-    }
-}
+        });
 
-const changePassword = as
+        if (!user) {
+            return sendError(res, 404, null, "User not found");
+        }
+
+        return sendSuccess(res, 200, { user }, "User data fetched successfully");
+    } catch (error) {
+        console.error("GetMe error:", error);
+        return sendError(res, 500, null, "Internal server error");
+    }
+};
+
+const changePassword = async (req, res) => {
+    try {
+        const { oldPassword, newPassword } = req.body;
+
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id }
+        });
+
+        if (!user) {
+            return sendError(res, 404, null, "User not found");
+        }
+
+        const isPasswordValid = await comparePassword(oldPassword, user.passwordHash);
+        if (!isPasswordValid) {
+            return sendError(res, 400, null, "Incorrect current password");
+        }
+
+        const newHashedPassword = await hashPassword(newPassword);
+
+        await prisma.user.update({
+            where: { id: req.user.id },
+            data: { passwordHash: newHashedPassword }
+        });
+
+        return sendSuccess(res, 200, null, "Password changed successfully");
+    } catch (error) {
+        console.error("ChangePassword error:", error);
+        return sendError(res, 500, null, "Internal server error");
+    }
+};
+
+const logout = async (req, res) => {
+    res.clearCookie("token");
+    return sendSuccess(res, 200, null, "User logged out successfully");
+};
+
+export { register, login, getMe, changePassword, logout };

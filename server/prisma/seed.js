@@ -116,7 +116,12 @@ async function main() {
         ],
     });
 
+    const usersCount = await prisma.user.count();
+    const storesCount = await prisma.store.count();
+    const ratingsCount = await prisma.rating.count();
+
     console.log("✅ Database seeded successfully!");
+    console.log(`📊 Seeded counts: ${usersCount} users, ${storesCount} stores, ${ratingsCount} ratings`);
     console.log("-----------------------------------------");
     console.log("Credentials for testing:");
     console.log("Admin:  admin@storerating.com  / Admin@12345");
