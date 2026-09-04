@@ -31,4 +31,31 @@ const authenticate = async (req, res, next) => {
     }
 };
 
-export { authenticate };
+const optionalAuthenticated = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return next();
+    }
+    try {
+        const token = authHeader.split(" ")[1];
+        const decodedToken = verifyToken(token);
+        if (!decodedToken || !decodedToken.userId) {
+            return next();
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: decodedToken.userId },
+            select: { id: true, name: true, email: true, role: true, address: true },
+        });
+
+        if (!user) {
+            return sendError(res, 401, null, "Unauthorized: User not found");
+        }
+
+        req.user = user;
+        next();
+    } catch (error) {
+        return next();
+    }
+}
+export { authenticate, optionalAuthenticated };

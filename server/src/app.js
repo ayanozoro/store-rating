@@ -4,6 +4,10 @@ import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
 import authRoutes from "./routes/authRoutes.js";
+import storeRoutes from "./routes/storeRoute.js";
+import ratingRoutes from "./routes/ratingRoute.js";
+import adminRoutes from "./routes/adminRoute.js";
+import ownerRoutes from "./routes/ownerRoute.js";
 
 const app = express();
 
@@ -20,7 +24,12 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use("/api/auth", authRoutes);
-
+app.use("/api/stores", storeRoutes);
+app.use("/api/store", storeRoutes);
+app.use("/api/ratings", ratingRoutes);
+app.use("/api/rating", ratingRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/owner", ownerRoutes);
 // Health check
 app.get('/health', (req, res) => {
     res.json({ status: "OK" });

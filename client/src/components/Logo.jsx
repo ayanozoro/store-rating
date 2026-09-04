@@ -1,0 +1,66 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+export default function Logo({ size = 'medium' }) {
+  const isSmall = size === 'small';
+  const isLarge = size === 'large';
+
+  const iconWidth = isSmall ? 28 : isLarge ? 48 : 36;
+  const iconHeight = isSmall ? 36 : isLarge ? 58 : 46;
+
+  return (
+    <Link to="/" className="brand-logo-link">
+      <div className="brand-icon-wrapper">
+        <svg
+          width={iconWidth}
+          height={iconHeight}
+          viewBox="0 0 64 64"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="brand-icon-svg"
+        >
+          <defs>
+            <linearGradient id="logoBookmarkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#1B4332" />
+              <stop offset="100%" stopColor="#0F281E" />
+            </linearGradient>
+            <linearGradient id="logoStarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#FBBF24" />
+              <stop offset="100%" stopColor="#D97706" />
+            </linearGradient>
+            <filter id="logoGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#F59E0B" floodOpacity="0.5"/>
+            </filter>
+          </defs>
+          {/* Ribbon Bookmark */}
+          <path
+            d="M14 6 C14 4.5 15.5 3 17 3 L47 3 C48.5 3 50 4.5 50 6 L50 59 C50 60.5 48.2 61.4 47 60.4 L32 48 L17 60.4 C15.8 61.4 14 60.5 14 59 Z"
+            fill="url(#logoBookmarkGrad)"
+            stroke="#2D6A4F"
+            strokeWidth="1.5"
+          />
+          {/* Subtle Stitching Accents */}
+          <line x1="18" y1="4" x2="18" y2="48" stroke="#52B788" strokeWidth="0.8" strokeDasharray="2 2" opacity="0.6"/>
+          <line x1="46" y1="4" x2="46" y2="48" stroke="#52B788" strokeWidth="0.8" strokeDasharray="2 2" opacity="0.6"/>
+          {/* Centered Gold Star Badge */}
+          <polygon
+            points="32,15 35.5,23 44,24 37.8,29.8 39.5,38 32,33.5 24.5,38 26.2,29.8 20,24 28.5,23"
+            fill="url(#logoStarGrad)"
+            stroke="#B45309"
+            strokeWidth="0.75"
+            filter="url(#logoGlow)"
+          />
+        </svg>
+      </div>
+
+      <div className="brand-text-block">
+        <span className={`brand-title ${isLarge ? 'title-large' : isSmall ? 'title-small' : ''}`}>
+          The Ledger
+        </span>
+        <span className="brand-subtitle">
+          Bookstores &amp; Curated Shops
+        </span>
+      </div>
+    </Link>
+  );
+}
